@@ -1,3 +1,20 @@
+# Use an official Gradle image as a build stage
+FROM gradle:8-jdk 
+WORKDIR /app
+
+# Copy Gradle files first (for caching dependencies)
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
+
+# Download dependencies to leverage caching
+RUN gradle dependencies
+
+# Copy the rest of the project
+COPY . .
+
+# Run clean build
+RUN gradle clean build
+
 # Use an official Java runtime as a parent image
 FROM eclipse-temurin:21-jdk
 

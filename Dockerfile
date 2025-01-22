@@ -1,8 +1,8 @@
-# Use an official Gradle image as a build stage
-FROM gradle:8-jdk 
+# ---- Build Stage ----
+FROM gradle:8-jdk AS build
 WORKDIR /app
 
-# Copy Gradle files first (for caching dependencies)
+# Copy only necessary Gradle files first for caching dependencies
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
 
@@ -12,20 +12,18 @@ RUN gradle dependencies
 # Copy the rest of the project
 COPY . .
 
-# Run clean build
-RUN gradle clean build
+# Run clean build (Ensure Gradle wrapper exists or use system Gradle)
+RUN ./gradlew clean build -x test
 
-# Use an official Java runtime as a parent image
+# ---- Runtime Stage ----
 FROM eclipse-temurin:21-jdk
-
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the packaged JAR file into the container
-COPY build/libs/audiovault-0.0.1-SNAPSHOT.jar audiovault.jar
+# Copy the JAR file from the build stage
+COPY --from=build /app/build/libs/audiovault-0.0.1-SNAPSHOT.jar audiovault.jar
 
-# Expose the port the app will run on (default Spring Boot port)
+# Expose the application port
 EXPOSE 8080
 
-# Run the JAR file
+# Run the application
 ENTRYPOINT ["java", "-jar", "audiovault.jar"]

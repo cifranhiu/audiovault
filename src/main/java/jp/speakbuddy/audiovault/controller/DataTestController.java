@@ -24,10 +24,15 @@ public class DataTestController {
         @RequestParam Long phraseId
     ) {
         if (userId > 0) {
-            userRepository.save(new User(userId));
+            User user = new User();
+            user.setId(userId);
+            userRepository.save(user);
         }
         if (userId > 0 && phraseId > 0) {
-            phraseRepository.save(new Phrase(phraseId, userId));
+            Phrase phrase = new Phrase();
+            phrase.setId(phraseId);
+            phrase.setUserId(userId);
+            phraseRepository.save(phrase);
         }
         return ResponseEntity.ok("Successfully add test data");
     }

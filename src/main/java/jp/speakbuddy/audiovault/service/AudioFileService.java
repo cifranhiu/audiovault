@@ -28,7 +28,7 @@ public class AudioFileService {
 
     private static final String AUDIO_STORAGE_DIR = "audio_files/";
     private static final String STORED_FORMAT = "wav";
-    // private static final String ACCEPTED_FORMAT = "m4a";
+    private static final String ACCEPTED_FORMAT = "m4a";
 
     public String storeAudioFile(MultipartFile inputFile, Long userId, Long phraseId) throws Exception {
         User user = userRepository.findById(userId)
@@ -46,14 +46,14 @@ public class AudioFileService {
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
+        
         // Generate a unique filename
         String fileName = userId + "_" + phraseId + "_" + System.currentTimeMillis() + "." + STORED_FORMAT;
         String filePath = AUDIO_STORAGE_DIR + fileName;
 
-        // Convert the file format using FFmpeg
-        File tempFile = new File(inputFile.getOriginalFilename());
+        File tempFile = File.createTempFile(inputFile.getOriginalFilename(), ".m4a");
         inputFile.transferTo(tempFile);
-        AudioConverter.convertAudioToWav(tempFile.getAbsolutePath(), filePath);
+        AudioConverter.convertAudioToWav(tempFile, filePath);
 
         // Store the file metadata in the database
         AudioFile audioFileEntity = new AudioFile();

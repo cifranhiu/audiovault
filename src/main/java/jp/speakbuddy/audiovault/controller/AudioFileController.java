@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import jp.speakbuddy.audiovault.dto.AudioFileDTO;
 import jp.speakbuddy.audiovault.service.AudioFileService;
 
 @RestController
@@ -23,13 +24,13 @@ public class AudioFileController {
     private AudioFileService audioFileService;
 
     @PostMapping("/user/{userId}/phrase/{phraseId}")
-    public ResponseEntity<String> uploadAudio(
-        @RequestParam("audio_file") MultipartFile audioFile,
+    public ResponseEntity<AudioFileDTO> uploadAudio(
+        @RequestParam("audio_file") MultipartFile inputFile,
         @PathVariable Long userId,
         @PathVariable Long phraseId
     ) throws Exception {
-        String filePath = audioFileService.storeAudioFile(audioFile, userId, phraseId);
-        return ResponseEntity.ok("File uploaded and stored at: " + filePath);
+        var stored = audioFileService.storeAudioFile(inputFile, userId, phraseId);
+        return ResponseEntity.ok(AudioFileDTO.from(stored));
     }
 
     @GetMapping("/user/{userId}/phrase/{phraseId}/{audioFormat}")

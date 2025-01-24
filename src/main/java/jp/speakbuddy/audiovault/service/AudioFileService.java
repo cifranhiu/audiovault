@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class AudioFileService {
     private static final String STORED_FORMAT = "wav";
     private static final String ACCEPTED_FORMAT = "m4a";
 
-    public String storeAudioFile(MultipartFile inputFile, Long userId, Long phraseId) throws Exception {
+    public AudioFile storeAudioFile(MultipartFile inputFile, Long userId, Long phraseId) throws Exception {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User ID " + userId + " not found"));
 
@@ -41,28 +42,44 @@ public class AudioFileService {
             throw new ValidationException("Phrase " + phraseId + " is not owned by user "+userId);
         }
 
+        // Check file extension first (quick check)
+        String originalFileName = inputFile.getOriginalFilename();
+        if (originalFileName == null || !originalFileName.toLowerCase().endsWith("." + ACCEPTED_FORMAT)) {
+            throw new ValidationException("Invalid file format. Only ." + ACCEPTED_FORMAT + " files are allowed.");
+        }
+
+        // Save to a temporary file
+        Path tempFile = Files.createTempFile("audio_upload", "." + ACCEPTED_FORMAT);
+        Files.copy(inputFile.getInputStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+
+        // Validate MIME type
+        String mimeType = Files.probeContentType(tempFile);
+        if (mimeType == null || !mimeType.equals("audio/mp4")) {
+            throw new ValidationException("Invalid file type. Only M4A (audio/mp4) files are allowed.");
+        }
+
         // Create directories if they do not exist
         Path path = Paths.get(AUDIO_STORAGE_DIR);
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
-        
+
         // Generate a unique filename
         String fileName = userId + "_" + phraseId + "_" + System.currentTimeMillis() + "." + STORED_FORMAT;
         String filePath = AUDIO_STORAGE_DIR + fileName;
 
-        File tempFile = File.createTempFile(inputFile.getOriginalFilename(), ".m4a");
-        inputFile.transferTo(tempFile);
-        AudioConverter.convertAudioToWav(tempFile, filePath);
+        // Convert to WAV
+        AudioConverter.convertAudioToWav(tempFile.toFile(), filePath);
 
-        // Store the file metadata in the database
+        // Store metadata
         AudioFile audioFileEntity = new AudioFile();
         audioFileEntity.setUserId(userId);
         audioFileEntity.setPhraseId(phraseId);
-        audioFileEntity.setFilePath(filePath);
+        audioFileEntity.setFileWAV(filePath);
+        audioFileEntity.setFileM4A(tempFile.toString());
         audioFileRepository.save(audioFileEntity);
 
-        return filePath;
+        return audioFileEntity;
     }
 
     public File retrieveAudioFile(Long userId, Long phraseId, String format) throws IOException {

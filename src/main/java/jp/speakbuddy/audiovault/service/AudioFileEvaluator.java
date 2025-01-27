@@ -2,12 +2,11 @@ package jp.speakbuddy.audiovault.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-
-import org.springframework.web.multipart.MultipartFile;
 
 import jp.speakbuddy.audiovault.exception.ValidationException;
 
@@ -15,23 +14,25 @@ public class AudioFileEvaluator {
     private static final String AUDIO_STORAGE_DIR = "audio_files/";
     private static final String FFMPEG_PATH = "ffmpeg";
 
-    private final MultipartFile inputFile;
+    private final InputStream inputFileStream;
+    private final String inputFileName;
     private Path tempFile;
     private String convertedFile;
 
-    public AudioFileEvaluator(MultipartFile inputFile) {
-        this.inputFile = inputFile;
+    public AudioFileEvaluator(InputStream inputFileStream, String inputFileName) {
+        this.inputFileStream = inputFileStream;
+        this.inputFileName = inputFileName;
     }
 
     public AudioFileEvaluator storeTemp(String format) throws Exception {
-        this.tempFile = Files.createTempFile("audio_upload_tmp_", "." + format);
-        Files.copy(inputFile.getInputStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+        this.tempFile = Files.createTempFile("audio_upload_", "." + format);
+        Files.copy(inputFileStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
         return this;
     }
 
     public AudioFileEvaluator validateFileFormat(String acceptedFormat) throws Exception {
         // Check file extension first (quick check)
-        String originalFileName = inputFile.getOriginalFilename();
+        String originalFileName = inputFileName;
         if (originalFileName == null || !originalFileName.toLowerCase().endsWith("." + acceptedFormat)) {
             Files.delete(tempFile);
             throw new ValidationException("Invalid file format. Only ." + acceptedFormat + " files are allowed.");
@@ -46,18 +47,12 @@ public class AudioFileEvaluator {
     }
 
     public AudioFileEvaluator convertFile(String fromFormat, String toFormat) throws Exception {
-        // // Generate a unique filename (output)
-        // String fileName = userId + "_" + phraseId + "_" + System.currentTimeMillis();
-        // String filePath =  + fileName + "." + toFormat;
-        // File outputFile = new File(outputFileName);
-
-        Path path = Paths.get(AUDIO_STORAGE_DIR);
+        Path path = Paths.get(AUDIO_STORAGE_DIR + "/" + toFormat + "/");
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
 
-        //AUDIO_STORAGE_DIR + "/" + toFormat + "/" + 
-        String outputFileName = tempFile.toFile().getAbsolutePath().replace(".m4a", ".wav");
+        String outputFileName = AUDIO_STORAGE_DIR + "/" + toFormat + "/" + tempFile.toFile().getName().replace("."+fromFormat, "."+toFormat);
 
         int exitCode = new ProcessBuilder(FFMPEG_PATH, "-i", tempFile.toFile().getAbsolutePath(), outputFileName)
             .redirectErrorStream(true)
@@ -76,7 +71,7 @@ public class AudioFileEvaluator {
         return this;
     }
 
-    public File store() throws Exception {
+    public File file() throws Exception {
         return new File(convertedFile);
     }
     

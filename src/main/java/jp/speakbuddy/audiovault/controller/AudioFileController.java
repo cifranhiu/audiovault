@@ -1,9 +1,11 @@
 package jp.speakbuddy.audiovault.controller;
 
 import java.io.File;
+import java.nio.file.Files;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,14 +36,16 @@ public class AudioFileController {
     }
 
     @GetMapping("/user/{userId}/phrase/{phraseId}/{audioFormat}")
-    public ResponseEntity<File> getAudio(
+    public ResponseEntity<byte[]> getAudio(
         @PathVariable Long userId,
         @PathVariable Long phraseId,
         @PathVariable String audioFormat
     ) throws Exception {
         File file = audioFileService.retrieveAudioFile(userId, phraseId, audioFormat);
+        byte[] fileBytes = Files.readAllBytes(file.toPath());
         return ResponseEntity.ok()
                 .header(CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
-                .body(file);
+                .header(CONTENT_TYPE, "audio/"+audioFormat)
+                .body(fileBytes);
     }
 }

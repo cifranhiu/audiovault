@@ -1,7 +1,7 @@
 package jp.speakbuddy.audiovault.service;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileInputStream;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +28,12 @@ public class AudioFileService {
             .validatePhrase(phraseRepository, phraseId)
             .validatePhraseOwnership();
 
-        var outputFile = new AudioFileEvaluator(inputFile)
+        var outputFile = new AudioFileEvaluator(inputFile.getInputStream(), inputFile.getOriginalFilename())
             .storeTemp(ACCEPTED_FORMAT)
             .validateFileFormat(ACCEPTED_FORMAT)
             .convertFile(ACCEPTED_FORMAT, STORED_FORMAT)
             .deleteTemp()
-            .store();
+            .file();
 
         AudioFile audioFileEntity = new AudioFile();
         Optional<AudioFile> audioFile = audioFileRepository.findByUserIdAndPhraseId(userId, phraseId);
@@ -48,7 +48,7 @@ public class AudioFileService {
     }
 
     @SuppressWarnings("ConvertToStringSwitch")
-    public File retrieveAudioFile(Long userId, Long phraseId, String format) throws IOException {
+    public File retrieveAudioFile(Long userId, Long phraseId, String format) throws Exception {
         new RequestEvaluator()
             .validateUser(userRepository, userId)
             .validatePhrase(phraseRepository, phraseId)
@@ -66,11 +66,16 @@ public class AudioFileService {
                 return new File(audioGet.getM4aFilepath());
             }
             if (audioGet.getWavFilepath() != null) {
-                // var wav = audioGet.getWavFilepath();
-                // var m4a = new AudioFileEvaluator(wav).convertFile(STORED_FORMAT).store();
-                // audioGet.setM4aFilepath(m4a);
-                // audioFileRepository.save(audioGet);
-                // return m4a;
+                // can improve this process using background process
+                var wavFile = new File(audioGet.getWavFilepath());
+                var m4a = new AudioFileEvaluator(new FileInputStream(wavFile), wavFile.getName())
+                    .storeTemp("wav")
+                    .convertFile("wav", "m4a")
+                    .deleteTemp()
+                    .file();
+                audioGet.setM4aFilepath(m4a.getAbsolutePath());
+                audioFileRepository.save(audioGet); // store in demand
+                return m4a;
             }
         } else if (format.equals("wav")) { 
             if (audioGet.getWavFilepath() != null) {

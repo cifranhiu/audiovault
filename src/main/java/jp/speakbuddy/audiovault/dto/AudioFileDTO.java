@@ -10,8 +10,8 @@ public class AudioFileDTO {
 
     public static AudioFileDTO from(AudioFile stored) {
         var result = new AudioFileDTO();
-        result.setWavFile(stored.getFileWAV());
-        result.setM4aFile(stored.getFileM4A());
+        result.setWavFile(stored.getWavFilepath());
+        result.setM4aFile(stored.getM4aFilepath());
         return result;
     }
     

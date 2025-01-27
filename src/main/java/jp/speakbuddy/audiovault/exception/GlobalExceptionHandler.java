@@ -26,6 +26,13 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    // Handle Process Failure Exception
+    @ExceptionHandler(ProcessFailureException.class)
+    public ResponseEntity<Map<String, Object>> handleProcessFailureException(ValidationException ex) {
+        System.out.println(ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
+
     // Handle General Exceptions (Fallback)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {

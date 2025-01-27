@@ -17,6 +17,6 @@ public class AudioFile {
 
     private Long userId;
     private Long phraseId;
-    private String fileM4A;
-    private String fileWAV;
+    private String m4aFilepath;
+    private String wavFilepath; // default store here
 }

@@ -1,3 +1,10 @@
+## Running The Application
+
+To run the application, run the following command
+
+```bash
+  gradle clean build && docker-compose build && docker-compose up
+```
 
 ## API Reference
 

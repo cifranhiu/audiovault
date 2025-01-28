@@ -16,7 +16,7 @@ public class AudioFileEvaluator {
 
     private final InputStream inputFileStream;
     private final String inputFileName;
-    private Path tempFile;
+    protected Path tempFile;
     private String convertedFile;
 
     public AudioFileEvaluator(InputStream inputFileStream, String inputFileName) {
@@ -47,14 +47,17 @@ public class AudioFileEvaluator {
     }
 
     public AudioFileEvaluator convertFile(String fromFormat, String toFormat) throws Exception {
+        return convertFile(new ProcessBuilder(), fromFormat, toFormat);
+    }
+    
+    public AudioFileEvaluator convertFile(ProcessBuilder pb, String fromFormat, String toFormat) throws Exception {
         Path path = Paths.get(AUDIO_STORAGE_DIR + "/" + toFormat + "/");
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
 
         String outputFileName = AUDIO_STORAGE_DIR + "/" + toFormat + "/" + tempFile.toFile().getName().replace("."+fromFormat, "."+toFormat);
-
-        int exitCode = new ProcessBuilder(FFMPEG_PATH, "-i", tempFile.toFile().getAbsolutePath(), outputFileName)
+        int exitCode = pb.command(FFMPEG_PATH, "-i", tempFile.toFile().getAbsolutePath(), outputFileName)
             .redirectErrorStream(true)
             .start()
             .waitFor();

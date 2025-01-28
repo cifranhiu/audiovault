@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
 
     // Handle Process Failure Exception
     @ExceptionHandler(ProcessFailureException.class)
-    public ResponseEntity<Map<String, Object>> handleProcessFailureException(ValidationException ex) {
+    public ResponseEntity<Map<String, Object>> handleProcessFailureException(ProcessFailureException ex) {
         System.out.println(ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
